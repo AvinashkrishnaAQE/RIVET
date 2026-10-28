@@ -1,6 +1,10 @@
 "use client";
-import { useEffect, useRef } from "react";
-import { User, Lock, ArrowRight } from 'lucide-react';
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { User, Lock } from "lucide-react";
+import { api, errorMessage } from "@/lib/api";
+import { FloatingInput, FormMessage, GlassCard, SubmitButton } from "@/components/auth/auth-form-parts";
 
 // Vertex shader source code
 const vertexSmokeySource = `
@@ -213,85 +217,90 @@ export function SmokeyBackground({
 }
 
 /**
- * A glassmorphism-style login form component with animated labels and Google login.
+ * A glassmorphism-style login form with animated labels. Signs in against the
+ * backend (cookie session) and continues to the dashboard.
  */
 export function LoginForm() {
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError(null);
+    setLoading(true);
+    try {
+      await api.login(email, password);
+      router.push("/dashboard");
+    } catch (err) {
+      setError(errorMessage(err));
+      setLoading(false);
+    }
+  }
+
   return (
-    <div className="w-full max-w-sm p-8 space-y-6 bg-white/10 backdrop-blur-lg rounded-2xl border border-white/20 shadow-2xl">
-      <div className="text-center">
-        <h2 className="text-3xl font-bold text-white">Welcome Back</h2>
-        <p className="mt-2 text-sm text-gray-300">Sign in to continue</p>
-      </div>
-      <form className="space-y-8">
-        {/* Email Input with Animated Label */}
-        <div className="relative z-0">
-          <input
-            type="email"
-            id="floating_email"
-            className="block py-2.5 px-0 w-full text-sm text-white bg-transparent border-0 border-b-2 border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-500 peer"
-            placeholder=" " 
-            required
-          />
-          <label
-            htmlFor="floating_email"
-            className="absolute text-sm text-gray-300 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:left-0 peer-focus:text-blue-400 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
-          >
-            <User className="inline-block mr-2 -mt-1" size={16} />
-            Email Address
-          </label>
-        </div>
-        {/* Password Input with Animated Label */}
-        <div className="relative z-0">
-          <input
-            type="password"
-            id="floating_password"
-            className="block py-2.5 px-0 w-full text-sm text-white bg-transparent border-0 border-b-2 border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-500 peer"
-            placeholder=" "
-            required
-          />
-          <label
-            htmlFor="floating_password"
-            className="absolute text-sm text-gray-300 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:left-0 peer-focus:text-blue-400 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
-          >
-            <Lock className="inline-block mr-2 -mt-1" size={16} />
-            Password
-          </label>
-        </div>
+    <GlassCard title="Welcome Back" subtitle="Sign in to continue">
+      <form className="space-y-8" onSubmit={handleSubmit}>
+        {error && <FormMessage kind="error">{error}</FormMessage>}
+
+        <FloatingInput
+          id="email"
+          type="email"
+          label="Email Address"
+          icon={<User size={16} />}
+          autoComplete="username"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
+        <FloatingInput
+          id="password"
+          type="password"
+          label="Password"
+          icon={<Lock size={16} />}
+          autoComplete="current-password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+        />
 
         <div className="flex items-center justify-between">
-          <a href="#" className="text-xs text-gray-300 hover:text-white transition">Forgot Password?</a>
+          <Link href="/forgot-password" className="text-xs text-gray-300 hover:text-white transition">
+            Forgot Password?
+          </Link>
         </div>
-        
-        <button
-          type="submit"
-          className="group w-full flex items-center justify-center py-3 px-4 bg-blue-600 hover:bg-blue-700 rounded-lg text-white font-semibold focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-blue-500 transition-all duration-300"
-        >
-          Sign In
-          <ArrowRight className="ml-2 h-5 w-5 transform group-hover:translate-x-1 transition-transform" />
-        </button>
+
+        <SubmitButton loading={loading}>Sign In</SubmitButton>
 
         {/* Divider */}
         <div className="relative flex py-2 items-center">
-            <div className="flex-grow border-t border-gray-400/30"></div>
-            <span className="flex-shrink mx-4 text-gray-400 text-xs">OR CONTINUE WITH</span>
-            <div className="flex-grow border-t border-gray-400/30"></div>
+          <div className="flex-grow border-t border-gray-400/30"></div>
+          <span className="flex-shrink mx-4 text-gray-400 text-xs">OR CONTINUE WITH</span>
+          <div className="flex-grow border-t border-gray-400/30"></div>
         </div>
 
-        {/* Google Login Button */}
+        {/* Google sign-in: the backend has no OAuth endpoint yet, so the button is inert. */}
         <button
           type="button"
-          className="w-full flex items-center justify-center py-2.5 px-4 bg-white/90 hover:bg-white rounded-lg text-gray-700 font-semibold focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-blue-500 transition-all duration-300"
+          disabled
+          title="Google sign-in is not available yet"
+          className="w-full flex items-center justify-center py-2.5 px-4 bg-white/90 rounded-lg text-gray-700 font-semibold opacity-50 cursor-not-allowed"
         >
-          <svg className="w-5 h-5 mr-2" viewBox="0 0 48 48">
+          <svg className="w-5 h-5 mr-2" viewBox="0 0 48 48" aria-hidden="true">
             <path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039L38.802 8.841C34.553 4.806 29.613 2.5 24 2.5C11.983 2.5 2.5 11.983 2.5 24s9.483 21.5 21.5 21.5S45.5 36.017 45.5 24c0-1.538-.135-3.022-.389-4.417z"></path><path fill="#FF3D00" d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12.5 24 12.5c3.059 0 5.842 1.154 7.961 3.039l5.839-5.841C34.553 4.806 29.613 2.5 24 2.5C16.318 2.5 9.642 6.723 6.306 14.691z"></path><path fill="#4CAF50" d="M24 45.5c5.613 0 10.553-2.306 14.802-6.341l-5.839-5.841C30.842 35.846 27.059 38 24 38c-5.039 0-9.345-2.608-11.124-6.481l-6.571 4.819C9.642 41.277 16.318 45.5 24 45.5z"></path><path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303c-.792 2.237-2.231 4.166-4.087 5.571l5.839 5.841C44.196 35.123 45.5 29.837 45.5 24c0-1.538-.135-3.022-.389-4.417z"></path>
           </svg>
           Sign in with Google
         </button>
-
       </form>
-       <p className="text-center text-xs text-gray-400">
-        Don&apos;t have an account? <a href="#" className="font-semibold text-blue-400 hover:text-blue-300 transition">Sign Up</a>
+
+      <p className="text-center text-xs text-gray-400">
+        Don&apos;t have an account?{" "}
+        <Link href="/register" className="font-semibold text-blue-400 hover:text-blue-300 transition">
+          Sign Up
+        </Link>
       </p>
-    </div>
+    </GlassCard>
   );
 }

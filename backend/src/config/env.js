@@ -33,8 +33,8 @@ const schema = z.object({
 
     // HTTP
     // Comma-separated list of browser origins allowed to call the API with credentials.
-    CORS_ORIGINS: z.string().default("http://localhost:3000"),
-    FRONTEND_URL: z.string().default("http://localhost:3000"),
+    CORS_ORIGINS: z.string().default("http://localhost:3133"),
+    FRONTEND_URL: z.string().default("http://localhost:3133"),
     JSON_BODY_LIMIT: z.string().default("100kb"),
     SHUTDOWN_TIMEOUT_MS: positiveInt(15_000),
 
