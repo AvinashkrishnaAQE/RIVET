@@ -1,31 +1,21 @@
-import { WebGLShader } from "@/components/ui/web-gl-shader";
-import { GetStartedButton } from "@/components/get-started-button";
+import { Features } from "@/components/landing/features";
+import { Footer } from "@/components/landing/footer";
+import { Hero } from "@/components/landing/hero";
+import { Navbar } from "@/components/landing/navbar";
+import { Pricing } from "@/components/landing/pricing";
+import { Team } from "@/components/landing/team";
 
 export default function Home() {
   return (
-    <div className="relative flex min-h-svh w-full flex-col items-center justify-center overflow-hidden">
-      <WebGLShader />
-      <div className="relative border border-[#27272a] p-2 w-full mx-auto max-w-3xl">
-        <main className="relative border border-[#27272a] py-10 overflow-hidden">
-          <h1 className="mb-3 text-white text-center text-7xl font-extrabold tracking-tighter md:text-[clamp(2rem,8vw,7rem)]">
-            Design is Everything
-          </h1>
-          <p className="text-white/60 px-6 text-center text-xs md:text-sm lg:text-lg">
-            Unleashing creativity through bold visuals, seamless interfaces, and limitless possibilities.
-          </p>
-          <div className="my-8 flex items-center justify-center gap-1">
-            <span className="relative flex h-3 w-3 items-center justify-center">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-500 opacity-75"></span>
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500"></span>
-            </span>
-            <p className="text-xs text-green-500">Available for New Projects</p>
-          </div>
-
-          <div className="flex justify-center">
-            <GetStartedButton />
-          </div>
-        </main>
-      </div>
+    <div className="bg-dots min-h-svh bg-ink font-ui text-white selection:bg-gold/30">
+      <Navbar />
+      <main>
+        <Hero />
+        <Features />
+        <Pricing />
+        <Team />
+      </main>
+      <Footer />
     </div>
   );
 }
