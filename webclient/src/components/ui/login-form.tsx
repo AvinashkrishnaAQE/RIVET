@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, useTransition, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { User, Lock } from "lucide-react";
@@ -225,18 +225,26 @@ export function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  // Pending until the route change finishes, then clears itself. With Cache
+  // Components the router keeps this page's state alive after navigating away, so
+  // a hand-managed `loading` flag left set would still be spinning on the next visit.
+  const [navigating, startNavigation] = useTransition();
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
-    setLoading(true);
+    setSubmitting(true);
     try {
       await api.login(email, password);
-      router.push("/dashboard");
+      // Do not leave credentials in state for the (kept-alive) page to show again.
+      setEmail("");
+      setPassword("");
+      startNavigation(() => router.push("/dashboard"));
     } catch (err) {
       setError(errorMessage(err));
-      setLoading(false);
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -272,7 +280,7 @@ export function LoginForm() {
           </Link>
         </div>
 
-        <SubmitButton loading={loading}>Sign In</SubmitButton>
+        <SubmitButton loading={submitting || navigating}>Sign In</SubmitButton>
 
         {/* Divider */}
         <div className="relative flex py-2 items-center">

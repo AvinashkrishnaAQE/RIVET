@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState, useTransition, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Lock, Mail, User } from "lucide-react";
@@ -13,18 +13,24 @@ export function RegisterForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  // See LoginForm: the router keeps this page's state alive, so loading must end by itself.
+  const [navigating, startNavigation] = useTransition();
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
-    setLoading(true);
+    setSubmitting(true);
     try {
       await api.register(name, email, password); // registering also signs the user in
-      router.push("/dashboard");
+      setName("");
+      setEmail("");
+      setPassword("");
+      startNavigation(() => router.push("/dashboard"));
     } catch (err) {
       setError(errorMessage(err));
-      setLoading(false);
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -40,7 +46,7 @@ export function RegisterForm() {
           <p className="mt-2 text-xs text-gray-400">At least 10 characters.</p>
         </div>
 
-        <SubmitButton loading={loading}>Create Account</SubmitButton>
+        <SubmitButton loading={submitting || navigating}>Create Account</SubmitButton>
       </form>
 
       <p className="text-center text-xs text-gray-400">
