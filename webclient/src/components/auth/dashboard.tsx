@@ -15,13 +15,29 @@ export function Dashboard() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
+    let active = true;
+
     api
       .me()
-      .then(setUser)
+      .then((me) => {
+        if (active) setUser(me);
+      })
       .catch((err) => {
+        if (!active) return;
         if (err instanceof ApiError && err.status === 401) router.replace("/login");
         else setError(errorMessage(err));
       });
+
+    return () => {
+      active = false;
+      // Cache Components keeps this page's state alive after navigating away and
+      // re-runs the effect when it is shown again. Without this reset the next
+      // visit starts with the previous one's state: `busy` still true (buttons
+      // disabled until a refresh) and the previous user's name on screen.
+      setUser(null);
+      setError(null);
+      setBusy(false);
+    };
   }, [router]);
 
   async function signOut(everywhere: boolean) {
