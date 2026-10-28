@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Lock } from "lucide-react";
 import { api, errorMessage } from "@/lib/api";
-import { FloatingInput, FormMessage, GlassCard, SubmitButton } from "./auth-form-parts";
+import { Accent, FloatingInput, FormMessage, GlassCard, SubmitButton, authLinkClass } from "./auth-form-parts";
 
 /** Landing page for the link in the reset email: /reset-password?token=... */
 export function ResetPasswordForm() {
@@ -31,7 +31,7 @@ export function ResetPasswordForm() {
   }
 
   return (
-    <GlassCard title="New Password" subtitle="Choose a new password for your account">
+    <GlassCard title={<>Choose a <Accent>new</Accent> password</>} subtitle="Pick something only you would know">
       {!token ? (
         <FormMessage kind="error">This reset link is incomplete. Request a new one.</FormMessage>
       ) : done ? (
@@ -48,7 +48,7 @@ export function ResetPasswordForm() {
       )}
 
       <p className="text-center text-xs text-gray-400">
-        <Link href={done ? "/login" : "/forgot-password"} className="font-semibold text-blue-400 hover:text-blue-300 transition">
+        <Link href={done ? "/login" : "/forgot-password"} className={authLinkClass}>
           {done ? "Go to Sign In" : "Request a new link"}
         </Link>
       </p>

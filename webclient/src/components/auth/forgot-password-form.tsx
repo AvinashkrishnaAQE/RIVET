@@ -4,7 +4,7 @@ import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { Mail } from "lucide-react";
 import { api, errorMessage } from "@/lib/api";
-import { FloatingInput, FormMessage, GlassCard, SubmitButton } from "./auth-form-parts";
+import { Accent, FloatingInput, FormMessage, GlassCard, SubmitButton, authLinkClass } from "./auth-form-parts";
 
 export function ForgotPasswordForm() {
   const [email, setEmail] = useState("");
@@ -27,7 +27,7 @@ export function ForgotPasswordForm() {
   }
 
   return (
-    <GlassCard title="Reset Password" subtitle="We'll email you a reset link">
+    <GlassCard title={<>Reset your <Accent>password</Accent></>} subtitle="We'll email you a reset link">
       <form className="space-y-8" onSubmit={handleSubmit}>
         {error && <FormMessage kind="error">{error}</FormMessage>}
         {message && <FormMessage kind="success">{message}</FormMessage>}
@@ -38,7 +38,7 @@ export function ForgotPasswordForm() {
       </form>
 
       <p className="text-center text-xs text-gray-400">
-        <Link href="/login" className="font-semibold text-blue-400 hover:text-blue-300 transition">
+        <Link href="/login" className={authLinkClass}>
           Back to Sign In
         </Link>
       </p>

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Lock, Mail, User } from "lucide-react";
 import { api, errorMessage } from "@/lib/api";
-import { FloatingInput, FormMessage, GlassCard, SubmitButton } from "./auth-form-parts";
+import { Accent, FloatingInput, FormMessage, GlassCard, SubmitButton, authLinkClass } from "./auth-form-parts";
 
 export function RegisterForm() {
   const router = useRouter();
@@ -35,7 +35,7 @@ export function RegisterForm() {
   }
 
   return (
-    <GlassCard title="Create Account" subtitle="Sign up to get started">
+    <GlassCard title={<>Create your <Accent>account</Accent></>} subtitle="Sign up to get started">
       <form className="space-y-8" onSubmit={handleSubmit}>
         {error && <FormMessage kind="error">{error}</FormMessage>}
 
@@ -51,7 +51,7 @@ export function RegisterForm() {
 
       <p className="text-center text-xs text-gray-400">
         Already have an account?{" "}
-        <Link href="/login" className="font-semibold text-blue-400 hover:text-blue-300 transition">
+        <Link href="/login" className={authLinkClass}>
           Sign In
         </Link>
       </p>

@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { BRAND } from "@/components/landing/content";
 import { api, ApiError, errorMessage, type User } from "@/lib/api";
 
 /**
@@ -51,49 +53,70 @@ export function Dashboard() {
   }
 
   return (
-    <main className="flex min-h-svh w-full items-center justify-center bg-gray-900 p-4">
-      <div className="w-full max-w-md space-y-6 rounded-2xl border border-white/20 bg-white/10 p-8 shadow-2xl backdrop-blur-lg">
-        {error ? (
-          <p role="alert" className="text-center text-sm text-red-200">{error}</p>
-        ) : !user ? (
-          <p className="text-center text-sm text-gray-300">Loading…</p>
-        ) : (
-          <>
-            <div className="text-center">
-              <h1 className="text-3xl font-bold text-white">Welcome, {user.name}</h1>
-              <p className="mt-2 text-sm text-gray-300">You are signed in.</p>
-            </div>
+    <div className="bg-dots min-h-svh bg-ink font-ui text-white selection:bg-gold/30">
+      <header className="fixed inset-x-0 top-0 z-50 border-b border-white/5 bg-ink/60 backdrop-blur-[10px]">
+        <div className="flex h-16 items-center justify-between px-6 md:px-12">
+          <Link href="/" className="font-display text-xl font-bold italic text-white">
+            {BRAND}
+          </Link>
+          {user && <span className="hidden text-[11px] uppercase tracking-[0.18em] text-white/50 sm:block">{user.email}</span>}
+        </div>
+      </header>
 
-            <dl className="space-y-2 rounded-lg border border-white/10 bg-black/20 p-4 text-sm">
-              <div className="flex justify-between gap-4">
-                <dt className="text-gray-400">Email</dt>
-                <dd className="text-white break-all">{user.email}</dd>
-              </div>
-              <div className="flex justify-between gap-4">
-                <dt className="text-gray-400">Role</dt>
-                <dd className="text-white capitalize">{user.role}</dd>
-              </div>
-            </dl>
-
-            <div className="space-y-3">
-              <button
-                onClick={() => signOut(false)}
-                disabled={busy}
-                className="w-full rounded-lg bg-blue-600 px-4 py-3 font-semibold text-white transition hover:bg-blue-700 disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                Sign out
-              </button>
-              <button
-                onClick={() => signOut(true)}
-                disabled={busy}
-                className="w-full rounded-lg border border-white/20 px-4 py-2.5 text-sm text-gray-200 transition hover:bg-white/10 disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                Sign out of all devices
-              </button>
+      <main className="flex min-h-svh items-center justify-center px-4 pb-10 pt-24">
+        <div className="glass w-full max-w-xl space-y-8 rounded-[32px] p-8 shadow-[0_0_100px_rgba(167,139,113,0.2)] sm:p-10">
+          {error ? (
+            <div className="space-y-4 text-center">
+              <p role="alert" className="text-sm text-red-200">{error}</p>
+              <Link href="/login" className="inline-block text-sm font-semibold text-gold transition-colors duration-300 ease-premium hover:text-gold-hover">
+                Back to sign in
+              </Link>
             </div>
-          </>
-        )}
-      </div>
-    </main>
+          ) : !user ? (
+            <p role="status" className="animate-pulse text-center text-[11px] uppercase tracking-[0.3em] text-gold">
+              Loading
+            </p>
+          ) : (
+            <>
+              <div className="text-center">
+                <p className="text-[11px] uppercase tracking-[0.35em] text-gold">Dashboard</p>
+                <h1 className="mt-4 font-display text-4xl italic leading-tight text-white sm:text-5xl">
+                  Welcome, <span className="text-gold">{user.name}</span>
+                </h1>
+                <p className="mt-3 text-sm text-gray-400">You are signed in.</p>
+              </div>
+
+              <dl className="divide-y divide-white/10 rounded-[24px] border border-white/10 bg-white/[0.03] px-6">
+                <div className="flex items-center justify-between gap-6 py-4">
+                  <dt className="text-[10px] uppercase tracking-[0.3em] text-gold">Email</dt>
+                  <dd className="break-all text-right text-sm text-white">{user.email}</dd>
+                </div>
+                <div className="flex items-center justify-between gap-6 py-4">
+                  <dt className="text-[10px] uppercase tracking-[0.3em] text-gold">Role</dt>
+                  <dd className="text-sm capitalize text-white">{user.role}</dd>
+                </div>
+              </dl>
+
+              <div className="space-y-3">
+                <button
+                  onClick={() => signOut(false)}
+                  disabled={busy}
+                  className="w-full rounded-full bg-white px-4 py-3 text-sm font-semibold text-black transition-colors duration-300 ease-premium hover:bg-gold-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 focus-visible:ring-offset-ink disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  Sign out
+                </button>
+                <button
+                  onClick={() => signOut(true)}
+                  disabled={busy}
+                  className="w-full rounded-full border border-white/25 px-4 py-3 text-sm font-medium text-white transition-colors duration-300 ease-premium hover:border-gold-hover hover:text-gold-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 focus-visible:ring-offset-ink disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  Sign out of all devices
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </main>
+    </div>
   );
 }
