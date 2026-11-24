@@ -31,7 +31,7 @@ const schema = z.object({
     DATABASE_URL_POOLED: emptyToUndefined(z.string().min(1).optional()),
     DB_POOL_MAX: positiveInt(10),
     DB_IDLE_TIMEOUT_MS: positiveInt(30_000),
-    DB_CONNECTION_TIMEOUT_MS: positiveInt(10_000),
+    DB_CONNECTION_TIMEOUT_MS: positiveInt(30_000),
     DB_STATEMENT_TIMEOUT_MS: positiveInt(30_000),
 
     // HTTP
