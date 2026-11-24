@@ -7,7 +7,7 @@ import { Team } from "@/components/landing/team";
 
 export default function Home() {
   return (
-    <div className="bg-dots min-h-svh bg-ink font-ui text-white selection:bg-gold/30">
+    <div className="bg-dots min-h-svh bg-ink font-ui text-foreground selection:bg-gold/30 transition-colors duration-500">
       <Navbar />
       <main>
         <Hero />

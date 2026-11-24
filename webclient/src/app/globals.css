@@ -1,31 +1,46 @@
 @import "tailwindcss";
 
-@custom-variant dark (&:is(.dark *));
+@variant dark (&:where(.dark, .dark *));
 
-/* shadcn/ui "neutral" theme tokens. Components reference these (bg-primary, text-muted-foreground, ...). */
+/* shadcn/ui neutral + luxury editorial theme tokens */
 :root {
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+
+  /* Light Theme (Warm Alabaster / Ivory Canvas & Rich Burnished Gold) */
+  --background: oklch(0.985 0.005 85);
+  --foreground: oklch(0.145 0.01 60);
+  --card: oklch(1 0 0 / 80%);
+  --card-foreground: oklch(0.145 0.01 60);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.145 0.01 60);
+  --primary: oklch(0.18 0.01 60);
   --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
+  --secondary: oklch(0.94 0.008 85);
   --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
+  --muted: oklch(0.94 0.008 85);
+  --muted-foreground: oklch(0.46 0.01 60);
+  --accent: oklch(0.94 0.008 85);
   --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  --border: oklch(0.88 0.01 80);
+  --input: oklch(0.88 0.01 80);
+  --ring: oklch(0.65 0.08 70);
+
+  /* Light luxury brand colors */
+  --ink: #f7f5f0;
+  --gold: #966d3d;
+  --gold-light: #b38d60;
+  --gold-hover: #785226;
+
+  /* Surfaces & Grid */
+  --glass-bg: rgba(255, 255, 255, 0.78);
+  --glass-border: rgba(150, 109, 61, 0.16);
+  --glass-shadow: 0 20px 45px -15px rgba(30, 25, 20, 0.07), 0 0 1px 1px rgba(150, 109, 61, 0.08);
+  --dot-color: rgba(150, 109, 61, 0.14);
 }
 
 .dark {
+  /* Dark Theme (Obsidian Ink & Champagne Gold) */
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);
@@ -44,6 +59,18 @@
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.556 0 0);
+
+  /* Dark luxury brand colors */
+  --ink: #0a0a0a;
+  --gold: #a78b71;
+  --gold-light: #c9b8a0;
+  --gold-hover: #e8d5b7;
+
+  /* Surfaces & Grid */
+  --glass-bg: rgba(255, 255, 255, 0.03);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-shadow: 0 0 100px rgba(167, 139, 113, 0.12);
+  --dot-color: rgba(255, 255, 255, 0.08);
 }
 
 @theme inline {
@@ -69,19 +96,18 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-ink: var(--ink);
+  --color-gold: var(--gold);
+  --color-gold-light: var(--gold-light);
+  --color-gold-hover: var(--gold-hover);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 }
 
-/* Landing page: gold-on-black palette, motion tokens and keyframes. */
+/* Landing page: motion tokens and keyframes. */
 @theme {
-  --color-ink: #0a0a0a;
-  --color-gold: #a78b71;
-  --color-gold-light: #c9b8a0;
-  --color-gold-hover: #e8d5b7;
-
   --ease-premium: cubic-bezier(0.4, 0, 0.2, 1);
   /* CSS stand-in for GSAP's power4.out (easeOutQuint). */
   --ease-reveal: cubic-bezier(0.22, 1, 0.36, 1);
@@ -113,18 +139,19 @@
   }
 }
 
-/* White dot grid, 32px apart, 8% opacity. */
+/* Dynamic dot grid, adapting between subtle gold in light and white in dark. */
 @utility bg-dots {
-  background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+  background-image: radial-gradient(var(--dot-color) 1px, transparent 1px);
   background-size: 32px 32px;
 }
 
-/* Glassmorphism surface used by every card and overlapping layer. */
+/* Dynamic glassmorphic surface. */
 @utility glass {
-  background: rgba(255, 255, 255, 0.03);
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -143,6 +170,6 @@
     overflow-x: hidden;
   }
   body {
-    @apply bg-background text-foreground font-sans antialiased;
+    @apply bg-background text-foreground font-sans antialiased transition-colors duration-500;
   }
 }

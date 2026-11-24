@@ -37,7 +37,7 @@ export function ForgotPasswordForm() {
         <SubmitButton loading={loading}>Send Reset Link</SubmitButton>
       </form>
 
-      <p className="text-center text-xs text-gray-400">
+      <p className="text-center text-xs text-zinc-600 dark:text-gray-400">
         <Link href="/login" className={authLinkClass}>
           Back to Sign In
         </Link>
