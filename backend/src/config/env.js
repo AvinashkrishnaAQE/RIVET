@@ -15,17 +15,20 @@ const booleanString = z
     .enum(["true", "false", "1", "0"])
     .transform((value) => value === "true" || value === "1");
 
+const emptyToUndefined = (schema) =>
+    z.preprocess((val) => (typeof val === "string" && val.trim() === "" ? undefined : val), schema);
+
 const schema = z.object({
     // Core
     NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
     PORT: z.coerce.number().int().min(0).max(65535).default(5000),
-    LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"]).optional(),
+    LOG_LEVEL: emptyToUndefined(z.enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"]).optional()),
     // Number of reverse proxies in front of the app (req.ip / rate limiting depend on it).
     TRUST_PROXY: z.coerce.number().int().min(0).default(0),
 
     // Database
     DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
-    DATABASE_URL_POOLED: z.string().min(1).optional(),
+    DATABASE_URL_POOLED: emptyToUndefined(z.string().min(1).optional()),
     DB_POOL_MAX: positiveInt(10),
     DB_IDLE_TIMEOUT_MS: positiveInt(30_000),
     DB_CONNECTION_TIMEOUT_MS: positiveInt(10_000),
@@ -51,8 +54,8 @@ const schema = z.object({
     PASSWORD_RESET_TTL_MINUTES: positiveInt(30),
 
     // Cookies
-    COOKIE_DOMAIN: z.string().min(1).optional(),
-    COOKIE_SECURE: booleanString.optional(),
+    COOKIE_DOMAIN: emptyToUndefined(z.string().min(1).optional()),
+    COOKIE_SECURE: emptyToUndefined(booleanString.optional()),
     // 'none' is required only when the frontend and API sit on different registrable domains.
     COOKIE_SAME_SITE: z.enum(["lax", "strict", "none"]).default("lax"),
 
