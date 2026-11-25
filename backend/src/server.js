@@ -30,9 +30,11 @@ async function connectDatabase() {
 /** Fails fast, with the fix in the message, if migrations have not been applied. */
 async function assertSchemaReady() {
     const { rows } = await executeQuery(
-        "SELECT to_regclass('public.users') AS users, to_regclass('public.sessions') AS sessions",
+        `SELECT to_regclass('public.users') AS users,
+                to_regclass('public.sessions') AS sessions,
+                to_regclass('public.github_webhook_deliveries') AS github_webhook_deliveries`,
     );
-    if (!rows[0].users || !rows[0].sessions) {
+    if (!rows[0].users || !rows[0].sessions || !rows[0].github_webhook_deliveries) {
         throw new Error("Database schema is missing. Run `npm run migrate` first.");
     }
 }

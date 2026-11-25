@@ -73,17 +73,29 @@ app.use(
 // Health endpoints sit outside versioning and rate limiting so probes always get through.
 app.use("/api", healthRoutes);
 
-app.use(express.json({ limit: env.JSON_BODY_LIMIT }));
+const jsonParser = express.json({ limit: env.JSON_BODY_LIMIT });
+const rawWebhookPath = `${API_V1}/webhooks/github`;
+// Webhook receivers verify HMAC signatures over the exact raw bytes and have their own size limit.
+app.use((req, res, next) => {
+    if (req.method === "POST" && req.path.replace(/\/+$/, "") === rawWebhookPath) {
+        return next();
+    }
+    return jsonParser(req, res, next);
+});
 app.use(cookieParser());
 
 app.use("/api", apiLimiter);
 
-// Endpoints a browser calls before it holds a CSRF token.
+// Endpoints a browser calls before it holds a CSRF token, plus signed server-to-server webhooks.
 app.use(
     csrfProtection({
-        exemptPaths: ["/auth/register", "/auth/login", "/auth/forgot-password", "/auth/reset-password"].map(
-            (p) => `${API_V1}${p}`,
-        ),
+        exemptPaths: [
+            "/auth/register",
+            "/auth/login",
+            "/auth/forgot-password",
+            "/auth/reset-password",
+            "/webhooks/github",
+        ].map((p) => `${API_V1}${p}`),
     }),
 );
 

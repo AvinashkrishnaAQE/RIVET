@@ -3,9 +3,14 @@
 // Uses DATABASE_URL (the direct, non-pooled connection): the advisory lock below
 // is session-scoped and does not survive a transaction-mode pooler.
 import { readdir, readFile } from "node:fs/promises";
+import net from "node:net";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
+
+if (typeof net.setDefaultAutoSelectFamilyAttemptTimeout === "function") {
+    net.setDefaultAutoSelectFamilyAttemptTimeout(5_000);
+}
 
 const MIGRATIONS_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "migrations");
 const LOCK_KEY = 7_424_001; // arbitrary constant: serialises concurrent migrators

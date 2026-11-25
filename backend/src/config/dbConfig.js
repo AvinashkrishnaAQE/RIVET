@@ -1,6 +1,13 @@
+import net from "node:net";
 import pg from "pg";
 import { env } from "./env.js";
 import { logger } from "../utils/logger.js";
+
+// Node's Happy Eyeballs defaults to a 250ms per-address timeout, which aborts
+// cross-region TCP handshakes prematurely with AggregateError [ETIMEDOUT].
+if (typeof net.setDefaultAutoSelectFamilyAttemptTimeout === "function") {
+    net.setDefaultAutoSelectFamilyAttemptTimeout(Math.min(env.DB_CONNECTION_TIMEOUT_MS, 5_000));
+}
 
 // TIMESTAMP WITHOUT TIME ZONE (OID 1114) is parsed by node-postgres in the *local*
 // timezone, silently shifting values on any server not running in UTC. Treat them

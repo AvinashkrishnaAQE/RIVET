@@ -72,6 +72,12 @@ const schema = z.object({
 
     // Session housekeeping
     CLEANUP_INTERVAL_MINUTES: positiveInt(60),
+
+    // Webhooks
+    GITHUB_WEBHOOK_SECRET: emptyToUndefined(
+        z.string().min(16, "GITHUB_WEBHOOK_SECRET must be at least 16 characters").optional(),
+    ),
+    WEBHOOK_BODY_LIMIT: z.string().default("5mb"),
 });
 
 function load() {
