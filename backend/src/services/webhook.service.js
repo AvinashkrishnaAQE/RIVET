@@ -571,7 +571,7 @@ export async function listGitHubDeliveries({ event, repository, status, limit, o
     };
 }
 
-export async function getGitHubDelivery(idOrDeliveryId) {
+async function findDeliveryRow(idOrDeliveryId) {
     const { rows } = await executeQuery(
         `SELECT ${DELIVERY_SUMMARY_COLUMNS},
                 signature_verified AS "signatureVerified",
@@ -584,7 +584,26 @@ export async function getGitHubDelivery(idOrDeliveryId) {
         [idOrDeliveryId],
     );
 
-    return rows[0] ? formatDeliveryDetail(rows[0]) : null;
+    return rows[0] ?? null;
+}
+
+export async function getGitHubDelivery(
+    idOrDeliveryId,
+    { autoSync = env.githubFetchDiffs, fetchFn = fetch, token = env.GITHUB_TOKEN } = {},
+) {
+    const row = await findDeliveryRow(idOrDeliveryId);
+    if (!row) return null;
+
+    const needsAutoDiff =
+        autoSync &&
+        (row.diffStatus === "not_applicable" || row.diffStatus === "skipped") &&
+        Boolean(buildDiffApiTarget(row.event, row.repository, row.payload));
+
+    if (needsAutoDiff) {
+        return syncGitHubDeliveryDiff(row.id, { fetchFn, token });
+    }
+
+    return formatDeliveryDetail(row);
 }
 
 /**
@@ -595,9 +614,10 @@ export async function syncGitHubDeliveryDiff(
     idOrDeliveryId,
     { fetchFn = fetch, token = env.GITHUB_TOKEN } = {},
 ) {
-    const existing = await getGitHubDelivery(idOrDeliveryId);
-    if (!existing) return null;
+    const row = await findDeliveryRow(idOrDeliveryId);
+    if (!row) return null;
 
+    const existing = formatDeliveryDetail(row);
     const baseChanges = existing.changes ?? extractEventChanges(existing.event, existing.payload);
     const diffResult = await fetchGitHubEventDiff({
         event: existing.event,

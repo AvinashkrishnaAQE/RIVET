@@ -59,6 +59,21 @@ function formatTimestamp(iso: string | null): string {
   });
 }
 
+async function fetchDeliveriesSnapshot(eventFilter: string, repoFilter: string, offset: number) {
+  return Promise.all([
+    api.me().catch((err) => {
+      if (err instanceof ApiError && err.status === 401) throw err;
+      return null;
+    }),
+    api.listGitHubDeliveries({
+      event: eventFilter || undefined,
+      repository: repoFilter || undefined,
+      limit: PAGE_SIZE,
+      offset,
+    }),
+  ]);
+}
+
 export function GitHubWebhooksView() {
   const [user, setUser] = useState<User | null>(null);
   const [unauthorized, setUnauthorized] = useState(false);
@@ -82,33 +97,43 @@ export function GitHubWebhooksView() {
   const [error, setError] = useState<string | null>(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
+  const syncSummaryInList = useCallback((updated: GitHubWebhookDeliveryDetail) => {
+    setDeliveries((prev) =>
+      prev.map((d) =>
+        d.id === updated.id
+          ? {
+              ...d,
+              diffStatus: updated.diffStatus,
+              diffError: updated.diffError,
+              changeSummary: updated.changes?.summary ?? d.changeSummary,
+            }
+          : d,
+      ),
+    );
+  }, []);
+
   const loadDeliveries = useCallback(
     async ({ silent = false }: { silent?: boolean } = {}) => {
       if (!silent) setLoadingList(true);
       try {
-        const [meResult, listResult] = await Promise.all([
-          api.me().catch((err) => {
-            if (err instanceof ApiError && err.status === 401) throw err;
-            return null;
-          }),
-          api.listGitHubDeliveries({
-            event: eventFilter || undefined,
-            repository: repoFilter || undefined,
-            limit: PAGE_SIZE,
-            offset,
-          }),
-        ]);
+        const [meResult, listResult] = await fetchDeliveriesSnapshot(eventFilter, repoFilter, offset);
         if (meResult) setUser(meResult);
         setUnauthorized(false);
         setError(null);
         setDeliveries(listResult.deliveries);
         setTotal(listResult.pagination.total);
-        setSelectedId((prev) => {
-          if (prev && listResult.deliveries.some((d) => d.id === prev || d.deliveryId === prev)) {
-            return prev;
-          }
-          return listResult.deliveries[0]?.id ?? null;
-        });
+        const targetId =
+          selectedId && listResult.deliveries.some((d) => d.id === selectedId || d.deliveryId === selectedId)
+            ? selectedId
+            : (listResult.deliveries[0]?.id ?? null);
+        setSelectedId(targetId);
+
+        if (!silent && targetId && targetId === selectedId) {
+          const refreshedDetail = await api.getGitHubDelivery(targetId);
+          setDetail(refreshedDetail);
+          syncSummaryInList(refreshedDetail);
+          setActiveTab(refreshedDetail.changes ? "changes" : "payload");
+        }
       } catch (err) {
         if (err instanceof ApiError && err.status === 401) {
           setUnauthorized(true);
@@ -120,7 +145,7 @@ export function GitHubWebhooksView() {
         setLoadingList(false);
       }
     },
-    [eventFilter, repoFilter, offset],
+    [eventFilter, repoFilter, offset, selectedId, syncSummaryInList],
   );
 
   // Initial load & filter/page updates without synchronous setState in effect body.
@@ -128,18 +153,7 @@ export function GitHubWebhooksView() {
     let active = true;
     void (async () => {
       try {
-        const [meResult, listResult] = await Promise.all([
-          api.me().catch((err) => {
-            if (err instanceof ApiError && err.status === 401) throw err;
-            return null;
-          }),
-          api.listGitHubDeliveries({
-            event: eventFilter || undefined,
-            repository: repoFilter || undefined,
-            limit: PAGE_SIZE,
-            offset,
-          }),
-        ]);
+        const [meResult, listResult] = await fetchDeliveriesSnapshot(eventFilter, repoFilter, offset);
         if (!active) return;
         if (meResult) setUser(meResult);
         setUnauthorized(false);
@@ -188,6 +202,7 @@ export function GitHubWebhooksView() {
         const fetched = await api.getGitHubDelivery(selectedId);
         if (!active) return;
         setDetail(fetched);
+        syncSummaryInList(fetched);
         setExpandAllDiffs(null);
         if (!fetched.changes && activeTab === "changes") {
           setActiveTab("payload");
@@ -207,7 +222,7 @@ export function GitHubWebhooksView() {
     };
     // Intentionally omit activeTab so switching tabs does not re-fetch the delivery.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedId, unauthorized]);
+  }, [selectedId, unauthorized, syncSummaryInList]);
 
   const handleSelectDelivery = (id: string) => {
     if (id === selectedId) return;
@@ -222,18 +237,7 @@ export function GitHubWebhooksView() {
     try {
       const updated = await api.syncGitHubDeliveryDiff(detail.id);
       setDetail(updated);
-      setDeliveries((prev) =>
-        prev.map((d) =>
-          d.id === updated.id
-            ? {
-                ...d,
-                diffStatus: updated.diffStatus,
-                diffError: updated.diffError,
-                changeSummary: updated.changes?.summary ?? d.changeSummary,
-              }
-            : d,
-        ),
-      );
+      syncSummaryInList(updated);
       setActiveTab("changes");
     } catch (err) {
       setError(errorMessage(err));
@@ -673,6 +677,12 @@ export function GitHubWebhooksView() {
                           <div className="font-semibold">Code diff could not be fetched from GitHub API</div>
                           <div className="mt-0.5 text-[11px] opacity-90">{detail.diffError}</div>
                         </div>
+                      </div>
+                    )}
+
+                    {!detail.changes && (
+                      <div className="rounded-xl border border-black/10 bg-black/[0.02] p-3 text-xs text-zinc-600 dark:border-white/10 dark:bg-white/[0.02] dark:text-zinc-300">
+                        <span className="font-mono font-semibold text-gold">{detail.event}</span> events carry repository/branch metadata without commits or code diffs. Select a <span className="font-mono font-semibold text-emerald-600 dark:text-emerald-400">push</span> or <span className="font-mono font-semibold text-purple-600 dark:text-purple-400">pull_request</span> delivery on the left to inspect changed files and diffs.
                       </div>
                     )}
 

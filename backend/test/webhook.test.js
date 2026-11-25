@@ -437,5 +437,18 @@ describe("github webhook query API", () => {
             headers: { authorization: `Bearer ${authToken}` },
         });
         assert.equal(missingSync.status, 404);
+
+        // Auto-syncs un-fetched push rows on read when autoSync is enabled
+        await executeQuery(
+            "UPDATE github_webhook_deliveries SET changes = NULL, diff_status = 'not_applicable', diff_error = NULL WHERE delivery_id = $1",
+            [deliveryId],
+        );
+        const autoSynced = await getGitHubDelivery(deliveryId, {
+            autoSync: true,
+            fetchFn: mockFetchSuccess,
+            token: undefined,
+        });
+        assert.equal(autoSynced.diffStatus, "fetched");
+        assert.equal(autoSynced.changes.files.length, 1);
     });
 });
