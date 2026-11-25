@@ -8,6 +8,7 @@ import {
   BarChart3,
   ShieldCheck,
   Rocket,
+  Webhook,
   Plus,
   X,
   LogOut,
@@ -157,6 +158,20 @@ export function StudioSidebar({
               </button>
             );
           })}
+
+          <Link
+            href="/webhooks/github"
+            onClick={onCloseMobile}
+            className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm font-medium text-zinc-600 transition-all duration-150 hover:bg-black/5 hover:text-foreground dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-white"
+          >
+            <span className="flex items-center gap-2.5">
+              <Webhook className="h-4 w-4 text-gold" />
+              <span>GitHub Webhooks</span>
+            </span>
+            <span className="rounded-full border border-emerald-500/25 bg-emerald-500/15 px-1.5 py-0.5 font-mono text-[10px] text-emerald-600 dark:text-emerald-300">
+              Live
+            </span>
+          </Link>
         </div>
 
         {/* Client Builds List */}

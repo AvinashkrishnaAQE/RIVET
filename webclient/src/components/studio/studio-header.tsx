@@ -1,6 +1,7 @@
 "use client";
 
-import { Menu, Zap } from "lucide-react";
+import Link from "next/link";
+import { Menu, Webhook, Zap } from "lucide-react";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { StudioView } from "./types";
 
@@ -80,6 +81,13 @@ export function StudioHeader({
               </button>
             );
           })}
+          <Link
+            href="/webhooks/github"
+            className="inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium text-gold transition-all hover:bg-gold/10"
+          >
+            <Webhook className="h-3 w-3" />
+            <span>Webhooks</span>
+          </Link>
         </div>
 
         {/* Universal Theme Toggle */}

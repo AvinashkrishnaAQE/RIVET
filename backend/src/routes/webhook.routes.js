@@ -28,4 +28,11 @@ router.get(
     controller.getGitHubDelivery,
 );
 
+router.post(
+    "/github/deliveries/:id/sync-diff",
+    authenticate,
+    validate({ params: deliveryIdParamsSchema }),
+    controller.syncGitHubDeliveryDiff,
+);
+
 export default router;

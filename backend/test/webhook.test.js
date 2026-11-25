@@ -22,7 +22,13 @@ Object.assign(process.env, {
 
 const { default: app } = await import("../src/app.js");
 const { executeQuery, closePool } = await import("../src/config/dbConfig.js");
-const { verifyGitHubSignature } = await import("../src/services/webhook.service.js");
+const {
+    extractEventChanges,
+    getGitHubDelivery,
+    recordGitHubDelivery,
+    syncGitHubDeliveryDiff,
+    verifyGitHubSignature,
+} = await import("../src/services/webhook.service.js");
 
 const runId = Date.now().toString(36);
 const TEST_USER_AGENT = `rivet-webhook-test-${runId}`;
@@ -335,5 +341,101 @@ describe("github webhook query API", () => {
             headers: { authorization: `Bearer ${authToken}` },
         });
         assert.equal(missingRes.status, 404);
+    });
+
+    test("extracts pushed commits/files and fetches code diffs via GitHub API", async () => {
+        const deliveryId = newDeliveryId("diff");
+        const repoName = `rivet/diff-${runId}`;
+        const pushPayload = {
+            ref: "refs/heads/main",
+            before: "1111111111111111111111111111111111111111",
+            after: "2222222222222222222222222222222222222222",
+            compare: `https://github.com/${repoName}/compare/1111111...2222222`,
+            repository: { full_name: repoName },
+            sender: { login: "alice" },
+            commits: [
+                {
+                    id: "2222222222222222222222222222222222222222",
+                    message: "feat: add webhook handler",
+                    timestamp: "2026-11-25T09:00:00Z",
+                    author: { username: "alice" },
+                    added: ["src/webhook.js"],
+                    modified: ["src/app.js"],
+                    removed: ["src/legacy.js"],
+                },
+            ],
+        };
+
+        const extracted = extractEventChanges("push", pushPayload);
+        assert.equal(extracted.summary.commitCount, 1);
+        assert.deepEqual(extracted.summary.added, ["src/webhook.js"]);
+        assert.deepEqual(extracted.summary.modified, ["src/app.js"]);
+        assert.deepEqual(extracted.summary.removed, ["src/legacy.js"]);
+
+        const mockFetchSuccess = async (url) => {
+            assert.match(url, /\/compare\/1111111111111111111111111111111111111111\.\.\.2222222222222222222222222222222222222222$/);
+            return {
+                ok: true,
+                status: 200,
+                json: async () => ({
+                    html_url: pushPayload.compare,
+                    files: [
+                        {
+                            filename: "src/webhook.js",
+                            status: "added",
+                            additions: 12,
+                            deletions: 0,
+                            changes: 12,
+                            patch: "@@ -0,0 +1,2 @@\n+export const ok = true;\n",
+                            blob_url: `https://github.com/${repoName}/blob/2222222/src/webhook.js`,
+                        },
+                    ],
+                }),
+            };
+        };
+
+        const recorded = await recordGitHubDelivery(
+            {
+                deliveryId,
+                event: "push",
+                action: null,
+                hookId: 99,
+                repository: repoName,
+                sender: "alice",
+                ref: "refs/heads/main",
+                payload: pushPayload,
+                headers: { "x-github-event": "push" },
+            },
+            { fetchDiffs: true, fetchFn: mockFetchSuccess, token: undefined },
+        );
+
+        assert.equal(recorded.deduplicated, false);
+        assert.equal(recorded.delivery.diffStatus, "fetched");
+        assert.equal(recorded.delivery.changeSummary.additions, 12);
+
+        const detail = await getGitHubDelivery(deliveryId);
+        assert.equal(detail.changes.files.length, 1);
+        assert.equal(detail.changes.files[0].patch, "@@ -0,0 +1,2 @@\n+export const ok = true;\n");
+
+        // Graceful failure when GitHub returns 404 (e.g. private repo without GITHUB_TOKEN)
+        const syncedFail = await syncGitHubDeliveryDiff(deliveryId, {
+            fetchFn: async () => ({ ok: false, status: 404 }),
+            token: undefined,
+        });
+        assert.equal(syncedFail.diffStatus, "failed");
+        assert.match(syncedFail.diffError, /GITHUB_TOKEN/);
+        assert.equal(syncedFail.changes.commits.length, 1);
+
+        // Endpoint auth + 404 checks
+        const unauthSync = await fetch(`${baseUrl}/api/v1/webhooks/github/deliveries/${deliveryId}/sync-diff`, {
+            method: "POST",
+        });
+        assert.equal(unauthSync.status, 401);
+
+        const missingSync = await fetch(`${baseUrl}/api/v1/webhooks/github/deliveries/does-not-exist/sync-diff`, {
+            method: "POST",
+            headers: { authorization: `Bearer ${authToken}` },
+        });
+        assert.equal(missingSync.status, 404);
     });
 });
