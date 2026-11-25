@@ -78,6 +78,9 @@ const schema = z.object({
         z.string().min(16, "GITHUB_WEBHOOK_SECRET must be at least 16 characters").optional(),
     ),
     WEBHOOK_BODY_LIMIT: z.string().default("5mb"),
+    GITHUB_TOKEN: emptyToUndefined(z.string().min(1).optional()),
+    GITHUB_FETCH_DIFFS: emptyToUndefined(booleanString.optional()),
+    GITHUB_API_TIMEOUT_MS: positiveInt(4_000),
 });
 
 function load() {
@@ -94,15 +97,17 @@ function load() {
 
     const data = result.data;
     const isProduction = data.NODE_ENV === "production";
+    const isTest = data.NODE_ENV === "test";
 
     return Object.freeze({
         ...data,
         isProduction,
-        isTest: data.NODE_ENV === "test",
+        isTest,
         corsOrigins: data.CORS_ORIGINS.split(",").map((o) => o.trim()).filter(Boolean),
         cookieSecure: data.COOKIE_SECURE ?? isProduction,
         // Browsers reject SameSite=None cookies that are not Secure.
         cookieSameSite: data.COOKIE_SAME_SITE,
+        githubFetchDiffs: data.GITHUB_FETCH_DIFFS ?? !isTest,
     });
 }
 

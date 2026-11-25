@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState, useTransition, type FormEvent } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { User, Lock } from "lucide-react";
 import { api, errorMessage } from "@/lib/api";
 import { Accent, FloatingInput, FormMessage, GlassCard, SubmitButton, authLinkClass } from "@/components/auth/auth-form-parts";
@@ -225,6 +225,9 @@ export function SmokeyBackground({
  */
 export function LoginForm() {
   const router = useRouter();
+  const nextParam = useSearchParams().get("next");
+  const redirectTarget =
+    nextParam && nextParam.startsWith("/") && !nextParam.startsWith("//") ? nextParam : "/dashboard";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -243,7 +246,7 @@ export function LoginForm() {
       // Do not leave credentials in state for the (kept-alive) page to show again.
       setEmail("");
       setPassword("");
-      startNavigation(() => router.push("/dashboard"));
+      startNavigation(() => router.push(redirectTarget));
     } catch (err) {
       setError(errorMessage(err));
     } finally {

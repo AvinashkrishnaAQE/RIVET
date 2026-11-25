@@ -54,3 +54,9 @@ export async function getGitHubDelivery(req, res) {
     if (!delivery) throw ApiError.notFound("Webhook delivery");
     res.json({ data: { delivery } });
 }
+
+export async function syncGitHubDeliveryDiff(req, res) {
+    const delivery = await webhookService.syncGitHubDeliveryDiff(req.validated.params.id);
+    if (!delivery) throw ApiError.notFound("Webhook delivery");
+    res.json({ data: { delivery } });
+}

@@ -17,6 +17,95 @@ export interface User {
   role: "user" | "admin";
 }
 
+export interface GitHubChangeSummary {
+  commitCount: number | null;
+  added?: string[];
+  modified?: string[];
+  removed?: string[];
+  totalFiles?: number;
+  additions?: number | null;
+  deletions?: number | null;
+}
+
+export interface GitHubCommitChange {
+  sha: string;
+  shortSha: string;
+  message: string;
+  author: string | null;
+  timestamp: string | null;
+  url: string | null;
+  added: string[];
+  modified: string[];
+  removed: string[];
+}
+
+export interface GitHubFileDiff {
+  filename: string;
+  previousFilename: string | null;
+  status: string;
+  additions: number | null;
+  deletions: number | null;
+  changes: number | null;
+  patch: string | null;
+  blobUrl: string | null;
+}
+
+export interface GitHubPullRequestInfo {
+  number: number;
+  title: string;
+  url: string | null;
+  state: string | null;
+  merged: boolean;
+  headRef: string | null;
+  baseRef: string | null;
+}
+
+export interface GitHubWebhookChanges {
+  summary: GitHubChangeSummary;
+  compareUrl: string | null;
+  before?: string | null;
+  after?: string | null;
+  forced?: boolean;
+  pullRequest?: GitHubPullRequestInfo;
+  commits: GitHubCommitChange[];
+  files: GitHubFileDiff[];
+}
+
+export type WebhookDiffStatus = "not_applicable" | "fetched" | "failed" | "skipped";
+
+export interface GitHubWebhookDeliverySummary {
+  id: string;
+  deliveryId: string;
+  event: string;
+  action: string | null;
+  hookId: number | null;
+  repository: string | null;
+  sender: string | null;
+  ref: string | null;
+  status: "processed" | "ignored" | "failed";
+  diffStatus: WebhookDiffStatus;
+  diffError: string | null;
+  changeSummary: GitHubChangeSummary | null;
+  receivedAt: string;
+  processedAt: string | null;
+}
+
+export interface GitHubWebhookDeliveryDetail extends GitHubWebhookDeliverySummary {
+  signatureVerified: boolean;
+  changes: GitHubWebhookChanges | null;
+  payload: Record<string, unknown>;
+  headers: Record<string, string>;
+}
+
+export interface GitHubDeliveriesResponse {
+  deliveries: GitHubWebhookDeliverySummary[];
+  pagination: {
+    total: number;
+    limit: number;
+    offset: number;
+  };
+}
+
 export class ApiError extends Error {
   constructor(
     public status: number,
@@ -121,4 +210,32 @@ export const api = {
 
   resetPassword: (token: string, newPassword: string) =>
     request<void>("/auth/reset-password", { method: "POST", body: { token, newPassword } }),
+
+  listGitHubDeliveries: (params?: {
+    event?: string;
+    repository?: string;
+    status?: string;
+    limit?: number;
+    offset?: number;
+  }) => {
+    const query = new URLSearchParams();
+    if (params?.event) query.set("event", params.event);
+    if (params?.repository) query.set("repository", params.repository);
+    if (params?.status) query.set("status", params.status);
+    if (params?.limit !== undefined) query.set("limit", String(params.limit));
+    if (params?.offset !== undefined) query.set("offset", String(params.offset));
+    const qs = query.toString();
+    return request<GitHubDeliveriesResponse>(`/webhooks/github/deliveries${qs ? `?${qs}` : ""}`);
+  },
+
+  getGitHubDelivery: (id: string) =>
+    request<{ delivery: GitHubWebhookDeliveryDetail }>(`/webhooks/github/deliveries/${encodeURIComponent(id)}`).then(
+      (data) => data.delivery,
+    ),
+
+  syncGitHubDeliveryDiff: (id: string) =>
+    request<{ delivery: GitHubWebhookDeliveryDetail }>(
+      `/webhooks/github/deliveries/${encodeURIComponent(id)}/sync-diff`,
+      { method: "POST" },
+    ).then((data) => data.delivery),
 };
